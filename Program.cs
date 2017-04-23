@@ -24,7 +24,7 @@ namespace LiveTrains
             string path = AppDomain.CurrentDomain.BaseDirectory;
             //remove \bin\Debug from path
             path = path.Remove(path.IndexOf("bin"), 10);
-            connStr += @"AttachDbFilename=" + path + "TramDatabase.mdf" + ";";
+            connStr += @"AttachDbFilename=" + path + "TrainsDatabase.mdf" + ";";
             conn = new SqlConnection(connStr);
             conn.Open();
         }
@@ -36,9 +36,9 @@ namespace LiveTrains
         }
 
         //GET request to API returning online trams in JSON
-        private static async Task GetTramsOnline()
+        private static async Task GetTramsOnlineOld()
         {
-            Console.WriteLine("GetTramOnline");
+            Console.WriteLine("GetTramOnlineOld");
             string uri = "https://api.um.warszawa.pl/api/action/wsstore_get/?";
             string resource_id = "c7238cfe-8b1f-4c38-bb4a-de386db7e776";
             uri += "id=" + resource_id;
@@ -56,7 +56,7 @@ namespace LiveTrains
                     //one record to database
                     Console.WriteLine(item);
 
-                    var comm = "INSERT INTO " + "Tramwaje";
+                    var comm = "INSERT INTO " + "TrainsOld";
                     comm += " VALUES (";
                     foreach (var child in item.Children())
                     {
@@ -85,6 +85,58 @@ namespace LiveTrains
             }
         }
 
+        private static async Task GetTramsOnline()
+        {
+            Console.WriteLine("GetTramsOnline");
+            string uri = "https://api.um.warszawa.pl/api/action/busestrams_get/?";
+            string resource_id = "f2e5503e- 927d-4ad3-9500-4ab9e55deb59";
+            uri += "resource_id=" + resource_id;
+            uri += "&";
+            uri += "type=2";
+            uri += "&";
+            uri += "apikey=" + apikey;
+
+            try
+            {
+                string responseBody = await client.GetStringAsync(uri);
+                var json = JObject.Parse(responseBody);
+                var jsonDeserialized = JsonConvert.DeserializeObject(responseBody);
+
+                foreach (var item in json["result"])
+                {
+                    //one record to database
+                    Console.WriteLine(item);
+
+                    var comm = "INSERT INTO " + "Trains";
+                    comm += " VALUES (";
+                    foreach (var child in item.Children())
+                    {
+                        Console.WriteLine(child.First);
+                        comm += "'" + child.First + "',";
+                    }
+                    comm = comm.Remove(comm.Length - 1);
+                    comm += ")";
+
+                    Console.WriteLine(comm);
+                    SqlCommand command = new SqlCommand(comm, conn);
+                    try
+                    {
+                        command.ExecuteNonQuery();
+                    }
+                    catch (Exception ex)
+                    {
+                        int statusCode = (int)HttpStatusCode.BadRequest;
+                    }
+                }
+            }
+            catch (HttpRequestException e)
+            {
+                Console.WriteLine("\nException Caught!");
+                Console.WriteLine("Message :{0} ", e.Message);
+            }
+        }
+
+
         private static async Task getTramStops()
         {
             Console.WriteLine("GetTramStops");
@@ -102,7 +154,7 @@ namespace LiveTrains
                 foreach (var item in json["result"])
                 {
                     //one record to database
-                    var comm = "INSERT INTO " + "Przystanek";
+                    var comm = "INSERT INTO " + "Stops";
                     comm += " VALUES (";
                     foreach (var field in item["values"])
                     {
@@ -162,8 +214,8 @@ namespace LiveTrains
                 foreach (var item in json["result"])
                 {
                     //one record to database
-                    var comm = "INSERT INTO " + "Linie";
-                    comm += " (przyst_id, nr_linii)";
+                    var comm = "INSERT INTO " + "Lines";
+                    comm += " (stop_id, no_line)";
                     comm += " VALUES ("+"'"+ przyst_id + "',";
                     foreach (var field in item["values"])
                     {
@@ -230,7 +282,7 @@ namespace LiveTrains
                 foreach (var item in json["result"])
                 {
                     //one record to database
-                    var comm = "INSERT INTO " + "Rozklad";
+                    var comm = "INSERT INTO " + "Timetable";
                     comm += " VALUES (" + "'" + przyst_id + "','"+nr_linii+"',";
                     foreach (var field in item["values"])
                     {
@@ -266,7 +318,7 @@ namespace LiveTrains
         private static List<string> getStopIds()
         {
             List<string> ids = new List<string>();
-            var comm = "SELECT przyst_id FROM Przystanek";
+            var comm = "SELECT stop_id FROM Stops";
             SqlCommand command = new SqlCommand(comm, conn);
 
             SqlDataReader reader = command.ExecuteReader();
@@ -288,7 +340,7 @@ namespace LiveTrains
 
         private static void clearDatabase()
         {
-            var comm = "DELETE FROM Przystanek; DELETE FROM Linie; DELETE FROM Rozklad";
+            var comm = "DELETE FROM Stops; DELETE FROM Lines; DELETE FROM Timetable";
             SqlCommand command = new SqlCommand(comm, conn);
             try
             {
@@ -329,12 +381,12 @@ namespace LiveTrains
             databaseConnect();
             client = new HttpClient();
 
-            init();
+            //init();
 
             System.Timers.Timer timer;
             timer = new System.Timers.Timer();
             timer.Elapsed += new ElapsedEventHandler(timer_tick);
-            timer.Interval = 30000;
+            timer.Interval = 10000;
             timer.Enabled = true;
             timer.Start();
 
