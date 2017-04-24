@@ -102,31 +102,38 @@ namespace LiveTrains
                 var json = JObject.Parse(responseBody);
                 var jsonDeserialized = JsonConvert.DeserializeObject(responseBody);
 
+                var onlineComm = "TRUNCATE TABLE Trains; INSERT INTO " + "Trains";
+                var historyComm = "INSERT INTO " + "TrainsHistory";
+                var comm = " VALUES ";
                 foreach (var item in json["result"])
                 {
                     //one record to database
-                    Console.WriteLine(item);
+                    comm += "(";
 
-                    var comm = "INSERT INTO " + "Trains";
-                    comm += " VALUES (";
                     foreach (var child in item.Children())
                     {
                         Console.WriteLine(child.First);
                         comm += "'" + child.First + "',";
                     }
+                    //removing last comma
                     comm = comm.Remove(comm.Length - 1);
-                    comm += ")";
+                    comm += "), ";
+                }
+                //removing last comma
+                comm = comm.Remove(comm.Length - 2);
+                historyComm += comm;
+                onlineComm += comm;
 
-                    Console.WriteLine(comm);
-                    SqlCommand command = new SqlCommand(comm, conn);
-                    try
-                    {
-                        command.ExecuteNonQuery();
-                    }
-                    catch (Exception ex)
-                    {
-                        int statusCode = (int)HttpStatusCode.BadRequest;
-                    }
+                SqlCommand command = new SqlCommand(onlineComm, conn);
+                SqlCommand command2 = new SqlCommand(historyComm, conn);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    command2.ExecuteNonQuery();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("TrainsOnline exception");
                 }
             }
             catch (HttpRequestException e)

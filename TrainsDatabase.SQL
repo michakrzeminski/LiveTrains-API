@@ -88,11 +88,6 @@ CREATE TABLE [TrainsHistory]
 )
 go
 
--- Add keys for table TrainsHistory
-
-ALTER TABLE [TrainsHistory] ADD CONSTRAINT [Key5] PRIMARY KEY ([lat],[lon],[lines],[brigade],[time])
-go
-
 -- Table TrainsOld
 
 CREATE TABLE [TrainsOld]
