@@ -358,6 +358,22 @@ namespace LiveTrains
                 Console.WriteLine(ex);
             }
         }
+
+        private static void clearBusStops()
+        {
+            var comm = "DELETE FROM Stops WHERE stop_id NOT IN (SELECT stop_id FROM Lines WHERE no_line != 0);";
+            comm += "DELETE FROM Lines WHERE no_line = 0";
+            SqlCommand command = new SqlCommand(comm, conn);
+            try
+            {
+                command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+
         static void init()
         {
             //clear database before insertions
@@ -374,6 +390,7 @@ namespace LiveTrains
             }
 
             //TODO method to drop not tram stops
+            clearBusStops();
 
             foreach(var przyst in tramDict)
             {
@@ -388,7 +405,7 @@ namespace LiveTrains
             databaseConnect();
             client = new HttpClient();
 
-            //init();
+            init();
 
             System.Timers.Timer timer;
             timer = new System.Timers.Timer();
