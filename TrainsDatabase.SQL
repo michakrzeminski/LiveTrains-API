@@ -88,6 +88,17 @@ CREATE TABLE [TrainsHistory]
 )
 go
 
+CREATE TABLE [TrainsStats]
+(
+ [stop_id] Nvarchar(10) NOT NULL,
+ [no_line] Nvarchar(10) NOT NULL,
+ [brigade] Nvarchar(10) NOT NULL,
+ [realtime] Nvarchar(20) NOT NULL,
+ [plannedtime] Nvarchar(20) NOT NULL,
+ [lateness] Nvarchar(10) NOT NULL
+)
+go
+
 -- Table TrainsOld
 
 CREATE TABLE [TrainsOld]
